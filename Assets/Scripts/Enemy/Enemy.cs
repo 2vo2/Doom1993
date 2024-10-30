@@ -3,13 +3,20 @@ using UnityEngine;
 
 public class Enemy : MonoBehaviour
 {
-    [SerializeField] private float _health;
-    [SerializeField] private float _damage;
-    [SerializeField] private float _attackSpeed;
-    [SerializeField] private float _attackRange;
+    [SerializeField] private EnemyScriptableObject _enemyData;
+    
+    private float _health;
+    private float _damage;
+    private float _attackSpeed;
+    private float _attackRange;
     
     private bool _canAttack = true;
-    
+
+    private void Awake()
+    {
+        Initialize();
+    }
+
     private void Update()
     {
         if (Vector3.Distance(transform.position, Player.Instance.transform.position) <= _attackRange)
@@ -21,6 +28,14 @@ public class Enemy : MonoBehaviour
                 Player.Instance.TakeDamage(_damage);
             }
         }
+    }
+
+    private void Initialize()
+    {
+        _health = _enemyData.Health;
+        _damage = _enemyData.Damage;
+        _attackSpeed = _enemyData.AttackSpeed;
+        _attackRange = _enemyData.AttackRange;
     }
 
     private IEnumerator AttackDelay()

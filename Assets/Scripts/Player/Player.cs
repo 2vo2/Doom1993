@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -5,11 +6,13 @@ public class Player : MonoBehaviour
     public static Player Instance;
     
     [SerializeField] private float _health;
-    [SerializeField] private float _damage;
-    [SerializeField] private float _attackRange;
+    [SerializeField] private Weapon _startWeapon;
     
-    private readonly Vector3 _rayVector = new Vector3(0.5f, 0.5f, 0);
+    private readonly List<Weapon> _weapons = new List<Weapon>();
+    
     private bool _isAlive;
+    private int _weaponIndex;
+    private Camera _camera;
 
     public bool IsAlive => _isAlive;
 
@@ -19,31 +22,27 @@ public class Player : MonoBehaviour
             Instance = this;
         else if (Instance == this)
             Destroy(gameObject);
-        
-        _isAlive = true;
     }
 
     private void Start()
     {
+        _camera = Camera.main;
         Cursor.lockState = CursorLockMode.Locked;
+        _isAlive = true;
+        _weapons.Add(_startWeapon);
     }
 
     private void Update()
     {
-        
-        Debug.DrawRay(_rayVector, transform.position * _attackRange, Color.yellow);
-        
-        if (Input.GetMouseButtonDown(0))
+        ChangedWeapon();
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.TryGetComponent(out PickUpWeapon weapon))
         {
-            var ray = Camera.main.ViewportPointToRay(_rayVector);
-            
-            if (Physics.Raycast(ray, out var hit, _attackRange))
-            {
-                if (hit.transform.TryGetComponent(out Enemy enemy))
-                {
-                    enemy.TakeDamage(_damage);
-                }
-            }
+            _weapons.Add(weapon.WeaponExample());
+            weapon.PickUp();
         }
     }
 
@@ -51,15 +50,30 @@ public class Player : MonoBehaviour
     {
         if (_health <= 0f)
         {
-            Camera.main.transform.parent = null;
+            _camera!.transform.parent = null;
             _isAlive = false;
             gameObject.SetActive(false);
+        }
+    }
+
+    private void ChangedWeapon()
+    {
+        if (_weapons.Count <= 1) return;
+        
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            _weapons[_weaponIndex].Drop();
+            _weaponIndex++;
+
+            if (_weaponIndex >= _weapons.Count) _weaponIndex = 0;
+            
+            _weapons[_weaponIndex].PickUp();
         }
     }
     
     public void TakeDamage(float damage)
     {
-        if (_damage <= 0) 
+        if (damage <= 0) 
             return;
         
         _health -= damage;
